@@ -6,6 +6,7 @@ class BusTracker {
     this.markers = [];
     this.stopMarker = null;
     this.arrivals = [];
+    this.stopInfo = null;
     this.selectedBusId = null;
     
     this.init();
@@ -83,6 +84,7 @@ class BusTracker {
 
     const responseData = data.data[0];
     this.arrivals = responseData.Arrive || [];
+    this.stopInfo = responseData.StopInfo?.[0] || null;
 
     if (this.arrivals.length === 0) {
       this.showEmpty('No buses arriving at this stop.');
@@ -150,6 +152,20 @@ class BusTracker {
   renderMap(stopId) {
     const bounds = [];
 
+    // Add stop marker if we have stop info
+    if (this.stopInfo?.geometry?.coordinates) {
+      const [lon, lat] = this.stopInfo.geometry.coordinates;
+      if (lat && lon) {
+        const stopIcon = this.createStopIcon(this.stopInfo.stopName || stopId);
+        
+        this.stopMarker = L.marker([lat, lon], { icon: stopIcon, zIndexOffset: 1000 })
+          .addTo(this.map)
+          .bindPopup(this.createStopPopupContent(this.stopInfo));
+
+        bounds.push([lat, lon]);
+      }
+    }
+
     // Add bus markers
     this.arrivals.forEach(arrival => {
       if (!arrival.geometry?.coordinates) return;
@@ -157,7 +173,6 @@ class BusTracker {
       const [lon, lat] = arrival.geometry.coordinates;
       if (!lat || !lon) return;
 
-      const eta = this.formatEta(arrival.estimateArrive);
       const icon = this.createBusIcon(arrival.line);
       
       const marker = L.marker([lat, lon], { icon })
@@ -171,13 +186,56 @@ class BusTracker {
       bounds.push([lat, lon]);
     });
 
-    // Try to get stop location from first arrival or use average of bus positions
+    // Fit bounds to show stop and all buses
     if (bounds.length > 0) {
-      // Add a stop marker at estimated position (we don't have exact stop coords in arrivals)
-      // For now, fit bounds to show all buses
-      const group = L.featureGroup(this.markers);
+      const allMarkers = this.stopMarker 
+        ? [this.stopMarker, ...this.markers]
+        : this.markers;
+      const group = L.featureGroup(allMarkers);
       this.map.fitBounds(group.getBounds().pad(0.2));
     }
+  }
+
+  createStopIcon(stopName) {
+    return L.divIcon({
+      className: 'stop-marker',
+      html: `
+        <div style="
+          color: #fff;
+          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 600;
+          font-size: 11px;
+          padding: 6px 10px;
+          border-radius: 35px;
+          box-shadow: 0 3px 15px rgba(255, 239, 107, 0.5);
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        ">
+          <span style="font-size: 32px;">🚏</span>
+        </div>
+      `,
+      iconSize: [60, 36],
+      iconAnchor: [60, 36]
+    });
+  }
+
+  createStopPopupContent(stopInfo) {
+    const lines = stopInfo.lines || [];
+    const linesHtml = lines.map(l => `
+      <span class="popup-line" style="background: #${l.color || '0072ce'}; ${l.forecolor ? 'color: #' + l.forecolor : ''}">${l.label}</span>
+    `).join(' ');
+
+    return `
+      <div class="popup-title">
+        <span style="font-size: 22px;">🚏</span>
+        ${stopInfo.stopName || 'Bus Stop'}
+      </div>
+      <div class="popup-detail"><strong>Stop ID:</strong> ${stopInfo.stopId}</div>
+      <div class="popup-detail">${stopInfo.Direction || ''}</div>
+      <div style="margin-top: 8px;">${linesHtml}</div>
+    `;
   }
 
   createBusIcon(line) {
@@ -245,6 +303,7 @@ class BusTracker {
       this.map.removeLayer(this.stopMarker);
       this.stopMarker = null;
     }
+    this.stopInfo = null;
     this.selectedBusId = null;
   }
 
