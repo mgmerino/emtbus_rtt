@@ -33,4 +33,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-retry", "~> 2.0"
+  spec.add_dependency "rack", "~> 3.0"
+  spec.add_dependency "webrick", "~> 1.8"
 end
