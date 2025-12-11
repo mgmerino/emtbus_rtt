@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMT Madrid Bus Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a24;
+      --accent: #00d4aa;
+      --accent-dim: #00a88a;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8888a0;
+      --border: #2a2a3a;
+      --error: #ff6b6b;
+      --warning: #ffd93d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .logo h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .search-form {
+      display: flex;
+      gap: 0.75rem;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .input-group label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+    }
+
+    .input-group input {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      width: 120px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15);
+    }
+
+    .input-group input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.5rem;
+      color: var(--bg-primary);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      align-self: flex-end;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 212, 170, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: calc(100vh - 80px);
+      background: var(--bg-secondary);
+    }
+
+    .sidebar {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      max-height: calc(100vh - 80px);
+    }
+
+    .sidebar-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg-secondary);
+      z-index: 10;
+    }
+
+    .sidebar-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar-header .count {
+      background: var(--accent);
+      color: var(--bg-primary);
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .arrivals-list {
+      padding: 0.75rem;
+    }
+
+    .arrival-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+
+    .arrival-card:hover {
+      border-color: var(--accent);
+      transform: translateX(-2px);
+    }
+
+    .arrival-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+    }
+
+    .arrival-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .line-badge {
+      background: var(--accent);
+      color: var(--bg-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+    }
+
+    .eta {
+      text-align: right;
+    }
+
+    .eta-time {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .eta-time.arriving {
+      color: #4ade80;
+      animation: pulse 1s infinite;
+    }
+
+    .eta-time.soon {
+      color: var(--warning);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .eta-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .arrival-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .detail {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .detail-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .destination {
+      grid-column: 1 / -1;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+      margin-top: 0.25rem;
+    }
+
+    .destination .detail-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid var(--error);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem;
+      color: var(--error);
+      font-size: 0.85rem;
+    }
+
+    .stop-marker {
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Custom Leaflet popup styles */
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .leaflet-popup-content {
+      margin: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+
+    .popup-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .popup-line {
+      background: var(--accent);
+      color: var(--bg-primary);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .popup-eta {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .popup-detail {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50vh 1fr;
+      }
+
+      .sidebar {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        max-height: none;
+      }
+
+      #map {
+        min-height: auto;
+      }
+
+      header {
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .search-form {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🚌</div>
+      <h1>EMT <span>Madrid</span></h1>
+    </div>
+    <form class="search-form" id="searchForm">
+      <div class="input-group">
+        <label for="stopId">Stop ID</label>
+        <input type="text" id="stopId" name="stopId" placeholder="e.g. 3112" required>
+      </div>
+      <div class="input-group">
+        <label for="line">Line (optional)</label>
+        <input type="text" id="line" name="line" placeholder="e.g. 146">
+      </div>
+      <button type="submit" class="btn" id="searchBtn">Track Buses</button>
+    </form>
+  </header>
+
+  <main>
+    <div id="map"></div>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>
+          Arrivals
+          <span class="count" id="arrivalCount">0</span>
+        </h2>
+      </div>
+      <div id="arrivalsList" class="arrivals-list">
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <h3>No arrivals loaded</h3>
+          <p>Enter a stop ID and click "Track Buses" to see real-time bus locations and ETAs.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
