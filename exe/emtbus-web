@@ -13,7 +13,10 @@ puts "=" * 40
 puts "Starting server on http://localhost:#{port}"
 puts "Press Ctrl+C to stop\n\n"
 
+bind = ENV.fetch("BIND", "0.0.0.0")
+
 server = WEBrick::HTTPServer.new(
+  BindAddress: bind,
   Port: port,
   Logger: WEBrick::Log.new($stderr, WEBrick::Log::INFO),
   AccessLog: [[File.open(File::NULL, "w"), WEBrick::AccessLog::COMMON_LOG_FORMAT]]

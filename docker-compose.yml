@@ -1,22 +1,26 @@
 services:
-  web:
+  rtt_web:
     build: .
     ports:
-      - "${PORT:-9292}:9292"
+      - "127.0.0.1:9292:9292"
+    expose:
+      - 9292
     environment:
-      - EMT_CLIENT_ID=${EMT_CLIENT_ID}
-      - EMT_PASS_KEY=${EMT_PASS_KEY}
+      - NETWORK_NAME=${NETWORK_NAME}
       - PORT=9292
+      - BIND=0.0.0.0
+      - EMT_CLIENT_ID=${EMT_CLIENT_ID}
+      - EMT_PASS_KEY=${EMT_PASS_KEY}  
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9292/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9292/"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
 
   # Development service with live reload
-  dev:
+  rtt_dev:
     build: .
     ports:
       - "${PORT:-9292}:9292"
@@ -30,4 +34,3 @@ services:
       - ./exe:/app/exe:ro
     profiles:
       - dev
-
