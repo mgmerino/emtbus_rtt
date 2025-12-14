@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Development files
+.rspec
+.rubocop.yml
+.ruby-version
+.tool-versions
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Test files
+spec/
+test/
+features/
+
+# Build artifacts
+*.gem
+pkg/
+coverage/
+tmp/
+log/
+
+# Docker files (avoid recursive builds)
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+appveyor.yml
+
+# Local env files (credentials should be passed via env vars)
+.env
+.env.*
+!.env.example
+
+# Bundler
+.bundle/
+vendor/bundle/
+
+# Signature files (not needed at runtime)
+sig/
+

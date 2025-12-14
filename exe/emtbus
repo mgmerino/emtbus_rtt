@@ -4,4 +4,3 @@
 require "emtbus_rtt/cli"
 
 EmtbusRtt::CLI.new.run
-
