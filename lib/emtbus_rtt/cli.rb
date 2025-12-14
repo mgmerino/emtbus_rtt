@@ -128,7 +128,7 @@ module EmtbusRtt
 
     def display_arrivals(result, stop_id)
       if result["code"] != "00"
-        error("API Error: #{result['description']}")
+        error("API Error: #{result["description"]}")
         return
       end
 
@@ -148,7 +148,7 @@ module EmtbusRtt
       # Display stop info if available
       stop_info = data["StopInfo"]&.first
       if stop_info && !stop_info.empty?
-        header("Stop: #{stop_info['stopName'] || stop_id}")
+        header("Stop: #{stop_info["stopName"] || stop_id}")
       else
         header("Stop #{stop_id}")
       end
@@ -194,7 +194,7 @@ module EmtbusRtt
 
       Array(incidents).each do |incident|
         if incident.is_a?(Hash)
-          puts "  #{COLORS[:yellow]}⚠#{COLORS[:reset]} #{incident['title'] || incident['description'] || incident.inspect}"
+          puts "  #{COLORS[:yellow]}⚠#{COLORS[:reset]} #{incident["title"] || incident["description"] || incident.inspect}"
         else
           puts "  #{COLORS[:yellow]}⚠#{COLORS[:reset]} #{incident}"
         end
@@ -211,19 +211,19 @@ module EmtbusRtt
 
       header("Authentication Status")
       puts ""
-      puts "  #{COLORS[:cyan]}User:#{COLORS[:reset]} #{data['userName']}"
-      puts "  #{COLORS[:cyan]}Email:#{COLORS[:reset]} #{data['email']}"
-      puts "  #{COLORS[:cyan]}Token:#{COLORS[:reset]} #{data['_id']}"
+      puts "  #{COLORS[:cyan]}User:#{COLORS[:reset]} #{data["userName"]}"
+      puts "  #{COLORS[:cyan]}Email:#{COLORS[:reset]} #{data["email"]}"
+      puts "  #{COLORS[:cyan]}Token:#{COLORS[:reset]} #{data["_id"]}"
 
       if data["tokenSecExpiration"]
-        puts "  #{COLORS[:cyan]}Token Expires In:#{COLORS[:reset]} #{format_duration(data['tokenSecExpiration'])}"
+        puts "  #{COLORS[:cyan]}Token Expires In:#{COLORS[:reset]} #{format_duration(data["tokenSecExpiration"])}"
       end
 
-      if data["apiCounter"]
-        counter = data["apiCounter"]
-        puts ""
-        puts "  #{COLORS[:cyan]}API Usage:#{COLORS[:reset]} #{counter['current']} / #{counter['dailyUse']} daily"
-      end
+      return unless data["apiCounter"]
+
+      counter = data["apiCounter"]
+      puts ""
+      puts "  #{COLORS[:cyan]}API Usage:#{COLORS[:reset]} #{counter["current"]} / #{counter["dailyUse"]} daily"
     end
 
     def format_time(seconds)
@@ -290,4 +290,3 @@ module EmtbusRtt
     end
   end
 end
-

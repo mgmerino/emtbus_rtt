@@ -20,13 +20,13 @@ Gem::Specification.new do |spec|
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.glob(%w[
-    lib/**/*
-    exe/*
-    web/**/*
-    LICENSE.txt
-    README.md
-    CHANGELOG.md
-  ]).reject { |f| File.directory?(f) }
+                          lib/**/*
+                          exe/*
+                          web/**/*
+                          LICENSE.txt
+                          README.md
+                          CHANGELOG.md
+                        ]).reject { |f| File.directory?(f) }
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]

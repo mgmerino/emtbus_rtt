@@ -21,4 +21,3 @@ module EmtbusRtt
     end
   end
 end
-
