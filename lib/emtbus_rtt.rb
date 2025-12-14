@@ -4,6 +4,7 @@ require_relative "emtbus_rtt/version"
 require_relative "emtbus_rtt/errors"
 require_relative "emtbus_rtt/client"
 
+# Configures the client with default credentials
 module EmtbusRtt
   class << self
     attr_accessor :client_id, :pass_key

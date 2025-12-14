@@ -42,15 +42,19 @@ module EmtbusRtt
 
       result = parse_response(response)
 
-      unless %w[00 01].include?(result["code"]) && result["data"]&.first
-        raise AuthenticationError, "Login failed: #{result["description"]}"
-      end
+      check_login_result(result)
 
       data = result["data"].first
       @access_token = data["accessToken"]
       @token_expiration = Time.now + (data["tokenSecExpiration"] || 86_400)
 
       result
+    end
+
+    def check_login_result(result)
+      return if %w[00 01].include?(result["code"]) && result["data"]&.first
+
+      raise AuthenticationError, "Login failed: #{result["description"]}"
     end
 
     # Check current authentication status
@@ -255,7 +259,8 @@ module EmtbusRtt
       return if @client_id && @pass_key
 
       raise ConfigurationError,
-            "Missing credentials. Provide client_id and pass_key or set EMT_CLIENT_ID and EMT_PASS_KEY environment variables."
+            "Missing credentials. Provide client_id and pass_key or set" \
+            "EMT_CLIENT_ID and EMT_PASS_KEY environment variables."
     end
 
     def unauthenticated_connection
