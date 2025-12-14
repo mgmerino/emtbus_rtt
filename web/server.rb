@@ -23,8 +23,6 @@ module EmtbusRtt
           handle_arrivals(request)
         when "/api/line_stops"
           handle_line_stops(request)
-        when "/api/whoami"
-          handle_whoami
         else
           serve_static(env)
         end
@@ -55,11 +53,6 @@ module EmtbusRtt
         return json_error("line_id is required", 400) unless line_id
 
         result = client.line_stops(line_id, direction)
-        json_response(result)
-      end
-
-      def handle_whoami
-        result = client.whoami
         json_response(result)
       end
 
@@ -98,4 +91,3 @@ module EmtbusRtt
     end
   end
 end
-

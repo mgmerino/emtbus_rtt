@@ -58,8 +58,6 @@ module EmtbusRtt
     # @return [Hash] The whoami response data
     # @raise [AuthenticationError] if not authenticated or token invalid
     def whoami
-      ensure_authenticated!
-
       response = authenticated_connection.get("/v1/mobilitylabs/user/whoami/")
       parse_response(response)
     end
@@ -93,19 +91,19 @@ module EmtbusRtt
     # @option options [String] :incidents_date Reference date for incidents (YYYYMMDD format)
     # @return [Hash] The arrivals response data
     def arrivals(stop_id, line: nil, **options)
-      ensure_authenticated!
+      with_auth_retry do
+        line_param = line || "all"
+        url = "/v2/transport/busemtmad/stops/#{stop_id}/arrives/#{line_param}/"
 
-      line_param = line || "all"
-      url = "/v2/transport/busemtmad/stops/#{stop_id}/arrives/#{line_param}/"
+        body = build_arrivals_body(options)
 
-      body = build_arrivals_body(options)
+        response = authenticated_connection.post(url) do |req|
+          req.headers["Content-Type"] = "application/json"
+          req.body = body.to_json
+        end
 
-      response = authenticated_connection.post(url) do |req|
-        req.headers["Content-Type"] = "application/json"
-        req.body = body.to_json
+        parse_response(response)
       end
-
-      parse_response(response)
     end
 
     # Get simple ETA for a bus line at a stop
@@ -163,12 +161,12 @@ module EmtbusRtt
     # @example
     #   client.line_stops('068', 1)
     def line_stops(line_id, direction)
-      ensure_authenticated!
+      with_auth_retry do
+        url = "/v1/transport/busemtmad/lines/#{line_id}/stops/#{direction}/"
 
-      url = "/v1/transport/busemtmad/lines/#{line_id}/stops/#{direction}/"
-
-      response = authenticated_connection.get(url)
-      parse_response(response)
+        response = authenticated_connection.get(url)
+        parse_response(response)
+      end
     end
 
     # Get formatted stop information for a bus line
@@ -224,6 +222,26 @@ module EmtbusRtt
     end
 
     private
+
+    # Execute a block with automatic re-authentication on 401 errors
+    #
+    # @yield The block to execute
+    # @return The result of the block
+    # @raise [Faraday::UnauthorizedError] if re-authentication fails
+    def with_auth_retry
+      ensure_authenticated!
+      yield
+    rescue Faraday::UnauthorizedError
+      # Token may have expired, re-authenticate and retry once
+      reset_authenticated_connection!
+      login
+      yield
+    end
+
+    # Reset the authenticated connection to use the new token
+    def reset_authenticated_connection!
+      @authenticated_connection = nil
+    end
 
     def seconds_to_eta(total_seconds)
       {
