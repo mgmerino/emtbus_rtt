@@ -8,13 +8,19 @@ class BusTracker {
     this.arrivals = [];
     this.stopInfo = null;
     this.selectedBusId = null;
-    
+    this.currentStopId = null;
+    this.currentLine = null;
+    this.favorites = [];
+    this.maxFavorites = 5;
+
     this.init();
   }
 
   init() {
+    this.loadFavorites();
     this.initMap();
     this.bindEvents();
+    this.renderFavorites();
   }
 
   initMap() {
@@ -38,19 +44,148 @@ class BusTracker {
       e.preventDefault();
       this.fetchArrivals();
     });
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.addEventListener('click', () => {
+      if (this.currentStopId) {
+        this.fetchArrivals();
+      }
+    });
+
+    // Favorite button
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    favoriteBtn.addEventListener('click', () => {
+      if (this.currentStopId) {
+        this.toggleFavorite();
+      }
+    });
+  }
+
+  // Favorites management
+  loadFavorites() {
+    try {
+      const stored = localStorage.getItem('emtbus_favorites');
+      this.favorites = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      this.favorites = [];
+    }
+  }
+
+  saveFavorites() {
+    try {
+      localStorage.setItem('emtbus_favorites', JSON.stringify(this.favorites));
+    } catch (e) {
+      console.error('Failed to save favorites:', e);
+    }
+  }
+
+  isFavorite(stopId, line = null) {
+    return this.favorites.some(f => f.stopId === stopId && f.line === line);
+  }
+
+  toggleFavorite() {
+    const stopId = this.currentStopId;
+    const line = this.currentLine;
+    const stopName = this.stopInfo?.stopName || null;
+
+    const existingIndex = this.favorites.findIndex(
+      f => f.stopId === stopId && f.line === line
+    );
+
+    if (existingIndex >= 0) {
+      // Remove from favorites
+      this.favorites.splice(existingIndex, 1);
+    } else {
+      // Add to favorites (check limit)
+      if (this.favorites.length >= this.maxFavorites) {
+        alert(`Maximum ${this.maxFavorites} favorites allowed. Remove one first.`);
+        return;
+      }
+      this.favorites.push({ stopId, line, stopName });
+    }
+
+    this.saveFavorites();
+    this.renderFavorites();
+    this.updateFavoriteButton();
+  }
+
+  removeFavorite(index) {
+    this.favorites.splice(index, 1);
+    this.saveFavorites();
+    this.renderFavorites();
+    this.updateFavoriteButton();
+  }
+
+  loadFavoriteStop(favorite) {
+    document.getElementById('stopId').value = favorite.stopId;
+    document.getElementById('line').value = favorite.line || '';
+    this.fetchArrivals();
+  }
+
+  renderFavorites() {
+    const section = document.getElementById('favoritesSection');
+    const list = document.getElementById('favoritesList');
+    const count = document.getElementById('favoritesCount');
+
+    count.textContent = `${this.favorites.length}/${this.maxFavorites}`;
+
+    if (this.favorites.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = this.favorites.map((fav, index) => `
+      <div class="favorite-chip" data-index="${index}">
+        <span class="stop-id">${fav.stopId}</span>
+        ${fav.stopName ? `<span class="stop-name">${fav.stopName}</span>` : ''}
+        ${fav.line ? `<span class="line-filter">${fav.line}</span>` : ''}
+        <span class="remove-btn" data-remove="${index}">&times;</span>
+      </div>
+    `).join('');
+
+    // Add click handlers
+    list.querySelectorAll('.favorite-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-btn')) {
+          const removeIndex = parseInt(e.target.dataset.remove);
+          this.removeFavorite(removeIndex);
+        } else {
+          const index = parseInt(chip.dataset.index);
+          this.loadFavoriteStop(this.favorites[index]);
+        }
+      });
+    });
+  }
+
+  updateFavoriteButton() {
+    const btn = document.getElementById('favoriteBtn');
+    const isFav = this.isFavorite(this.currentStopId, this.currentLine);
+    btn.innerHTML = isFav ? '&#x2605;' : '&#x2606;'; // filled vs empty star
+    btn.classList.toggle('active', isFav);
+    btn.title = isFav ? 'Remove from favorites' : 'Save to favorites';
   }
 
   async fetchArrivals() {
     const stopId = document.getElementById('stopId').value.trim();
     const line = document.getElementById('line').value.trim() || null;
     const btn = document.getElementById('searchBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const favoriteBtn = document.getElementById('favoriteBtn');
     const listEl = document.getElementById('arrivalsList');
 
     if (!stopId) return;
 
+    // Store current search params
+    this.currentStopId = stopId;
+    this.currentLine = line;
+
     // Show loading state
     btn.disabled = true;
     btn.textContent = 'Loading...';
+    refreshBtn.disabled = true;
+    refreshBtn.classList.add('spinning');
     listEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
     try {
@@ -65,11 +200,19 @@ class BusTracker {
       }
 
       this.processArrivals(data, stopId);
+
+      // Enable action buttons
+      refreshBtn.disabled = false;
+      favoriteBtn.disabled = false;
+      this.updateFavoriteButton();
     } catch (error) {
       listEl.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+      refreshBtn.disabled = false;
+      favoriteBtn.disabled = true;
     } finally {
       btn.disabled = false;
       btn.textContent = 'Track Buses';
+      refreshBtn.classList.remove('spinning');
     }
   }
 

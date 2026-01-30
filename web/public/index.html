@@ -359,6 +359,137 @@
       font-size: 0.85rem;
     }
 
+    .sidebar-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .btn-icon {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-icon:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-icon.active {
+      color: var(--warning);
+      border-color: var(--warning);
+    }
+
+    .btn-icon.spinning {
+      animation: spin 0.8s linear infinite;
+    }
+
+    .favorites-section {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+    }
+
+    .favorites-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .favorites-header h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+    }
+
+    .favorites-count {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .favorites-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .favorite-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .favorite-chip:hover {
+      border-color: var(--accent);
+      background: rgba(0, 212, 170, 0.1);
+    }
+
+    .favorite-chip .stop-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .favorite-chip .stop-name {
+      color: var(--text-secondary);
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .favorite-chip .line-filter {
+      background: var(--accent);
+      color: var(--bg-primary);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .favorite-chip .remove-btn {
+      color: var(--text-secondary);
+      margin-left: 0.25rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .favorite-chip:hover .remove-btn {
+      opacity: 1;
+    }
+
+    .favorite-chip .remove-btn:hover {
+      color: var(--error);
+    }
+
+    .favorites-empty {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
     .stop-marker {
       border-radius: 50%;
       width: 20px;
@@ -464,11 +595,24 @@
   <main>
     <div id="map"></div>
     <aside class="sidebar">
+      <div id="favoritesSection" class="favorites-section" style="display: none;">
+        <div class="favorites-header">
+          <h3>Favorites</h3>
+          <span class="favorites-count" id="favoritesCount">0/5</span>
+        </div>
+        <div id="favoritesList" class="favorites-list">
+          <span class="favorites-empty">No favorites saved</span>
+        </div>
+      </div>
       <div class="sidebar-header">
         <h2>
           Arrivals
           <span class="count" id="arrivalCount">0</span>
         </h2>
+        <div class="sidebar-actions">
+          <button id="refreshBtn" class="btn-icon" title="Refresh ETAs" disabled>&#x21bb;</button>
+          <button id="favoriteBtn" class="btn-icon" title="Save to favorites" disabled>&#x2606;</button>
+        </div>
       </div>
       <div id="arrivalsList" class="arrivals-list">
         <div class="empty-state">
