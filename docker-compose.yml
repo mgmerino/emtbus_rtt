@@ -1,8 +1,7 @@
 services:
   rtt_web:
     build: .
-    ports:
-      - "127.0.0.1:9292:9292"
+    container_name: rtt_web
     expose:
       - 9292
     environment:
@@ -10,7 +9,7 @@ services:
       - PORT=9292
       - BIND=0.0.0.0
       - EMT_CLIENT_ID=${EMT_CLIENT_ID}
-      - EMT_PASS_KEY=${EMT_PASS_KEY}  
+      - EMT_PASS_KEY=${EMT_PASS_KEY}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:9292/"]
